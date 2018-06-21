@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
-	"sync"
-	// "time"
 )
 
 const Version = "0.1.5"
@@ -62,24 +60,19 @@ func main() {
 		panic(problem)
 	}
 
-	var mutex = &sync.Mutex{}
-	var wg sync.WaitGroup
+	ch := make(chan *proverb)
+	go printProverbs(ch)
 	for _, p := range proverbs {
-		//go p.printer(mutex)
-		wg.Add(1)
-		go p.printer(mutex, &wg)
+		ch <- p
 	}
-	wg.Wait()
-	// <-time.After(time.Second * 1)
+	close(ch)
 }
 
-//func (p *proverb) printer(mutex *sync.Mutex) {
-func (p *proverb) printer(mutex *sync.Mutex, wg *sync.WaitGroup) {
-	mutex.Lock()
-	fmt.Printf("%s\n", p.line)
-	fmt.Printf("%s\n\n", formatMap(p.chars))
-	mutex.Unlock()
-	wg.Done()
+func printProverbs(ch chan *proverb) {
+	for p := range ch {
+		fmt.Printf("%s\n", p.line)
+		fmt.Printf("%s\n\n", formatMap(p.chars))
+	}
 }
 
 func mapRunes(line string) runeinfo {
